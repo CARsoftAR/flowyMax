@@ -18,6 +18,7 @@ class PlayTrack extends PlayerEvent {
 }
 
 class TogglePause extends PlayerEvent {}
+class StopTrack extends PlayerEvent {}
 
 class UpdatePosition extends PlayerEvent {
   final Duration position;
@@ -41,14 +42,15 @@ class PlayerState extends Equatable {
   });
 
   PlayerState copyWith({
-    SongEntity? currentSong,
+     SongEntity? currentSong,
     bool? isPlaying,
     bool? isLoading,
     Duration? position,
     Duration? duration,
+    bool clearSong = false,
   }) {
     return PlayerState(
-      currentSong: currentSong ?? this.currentSong,
+      currentSong: clearSong ? null : (currentSong ?? this.currentSong),
       isPlaying: isPlaying ?? this.isPlaying,
       isLoading: isLoading ?? this.isLoading,
       position: position ?? this.position,
@@ -74,20 +76,16 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     
     on<PlayTrack>(_onPlayTrack);
     on<TogglePause>(_onTogglePause);
+    on<StopTrack>(_onStopTrack);
     on<UpdatePosition>((event, emit) => emit(state.copyWith(position: event.position)));
 
     // Listen to player streams
     _player.positionStream.listen((pos) => add(UpdatePosition(pos)));
     _player.durationStream.listen((dur) => emit(state.copyWith(duration: dur ?? Duration.zero)));
-    _player.playerStateStream.listen((s) {
-      if (s.processingState == ProcessingState.completed) {
-        // Handle auto-next here if needed
-      }
-    });
   }
 
   Future<void> _onPlayTrack(PlayTrack event, Emitter<PlayerState> emit) async {
-    emit(state.copyWith(currentSong: event.song, isLoading: true, isPlaying: false));
+    emit(state.copyWith(currentSong: event.song, isLoading: true, isPlaying: false, clearSong: false));
     
     final result = await _getStreamUrl(event.song.title, event.song.artist);
     
@@ -113,5 +111,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       _player.play();
       emit(state.copyWith(isPlaying: true));
     }
+  }
+
+  void _onStopTrack(StopTrack event, Emitter<PlayerState> emit) {
+    _player.stop();
+    emit(const PlayerState());
   }
 }

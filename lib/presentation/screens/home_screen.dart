@@ -50,16 +50,14 @@ class _HomeScreenState extends State<HomeScreen> {
             
             _buildAtmosphere(palette),
 
-            // ── CAPA 2: CONTENIDO SCROLLABLE ─────────────────────────────────
+            // ── CAPA 2: CONTENIDO SCROLLABLE (CustomScrollView) ──────────────
             SafeArea(
               child: BlocBuilder<SearchBloc, SearchState>(
-                builder: (context, state) {
+                builder: (context, searchState) {
                   return CustomScrollView(
-                    physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
-                    ),
+                    physics: const BouncingScrollPhysics(),
                     slivers: [
-                      // 1. SliverAppBar (Search)
+                      // Search Bar
                       SliverAppBar(
                         backgroundColor: Colors.transparent,
                         elevation: 0,
@@ -86,14 +84,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                 ),
-                                Icon(Icons.mic_none_rounded, color: Colors.white.withOpacity(0.5), size: 20),
                               ],
                             ),
                           ),
                         ),
                       ),
 
-                      // 2. Moods (Elastic Design)
+                      // Moods
                       SliverToBoxAdapter(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,7 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                      // 3. Tendencias (22px, Poppins)
+                      // Tendencias
                       SliverPadding(
                         padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
                         sliver: SliverToBoxAdapter(
@@ -131,8 +128,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                      // 4. Song List
-                      if (state is SearchLoading)
+                      // Song List
+                      if (searchState is SearchLoading)
                         const SliverToBoxAdapter(
                           child: Center(
                             child: Padding(
@@ -141,13 +138,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         )
-                      else if (state is SearchLoaded)
+                      else if (searchState is SearchLoaded)
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           sliver: SliverList(
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
-                                final song = state.songs[index];
+                                final song = searchState.songs[index];
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: ScaleOnPress(
@@ -158,39 +155,56 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 );
                               },
-                              childCount: state.songs.length,
+                              childCount: searchState.songs.length,
                             ),
                           ),
                         ),
 
-                      const SliverPadding(padding: EdgeInsets.only(bottom: 180)),
+                      const SliverPadding(padding: EdgeInsets.only(bottom: 240)),
                     ],
                   );
                 },
               ),
             ),
 
-            // ── CAPA 3: UI FIJA (Player & Navbar) ────────────────────────────
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 16,
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const FloatingPlayer(),
-                      const SizedBox(height: 2),
-                      FloatingNavbar(
-                        selectedIndex: _selectedIndex,
-                        onTap: (index) => setState(() => _selectedIndex = index),
+            // ── CAPA 3: UI FIJA (Null-Safe 3D Card & Navbar) ─────────────────
+            BlocBuilder<PlayerBloc, PlayerState>(
+              builder: (context, playerState) {
+                return Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 16,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Null-Safe Active Track Card
+                          if (playerState.currentSong != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Dismissible(
+                                key: ValueKey('player_${playerState.currentSong!.id}'),
+                                direction: DismissDirection.horizontal,
+                                onDismissed: (_) {
+                                  context.read<PlayerBloc>().add(StopTrack());
+                                },
+                                child: const FloatingPlayer(),
+                              ),
+                            ),
+                          
+                          // Integrated Navbar
+                          FloatingNavbar(
+                            selectedIndex: _selectedIndex,
+                            onTap: (index) => setState(() => _selectedIndex = index),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),
@@ -204,11 +218,10 @@ class _HomeScreenState extends State<HomeScreen> {
       {'label': 'Modo bestia', 'icon': Icons.bolt_rounded, 'color': Colors.orange},
       {'label': 'Corazón roto', 'icon': Icons.heart_broken_rounded, 'color': Colors.deepPurpleAccent},
       {'label': 'Fiesta nocturna', 'icon': Icons.celebration_rounded, 'color': Colors.pinkAccent},
-      {'label': 'Momentos chill', 'icon': Icons.waves_rounded, 'color': Colors.blueAccent},
     ];
 
     return SizedBox(
-      height: 64, // Sufficient height to prevent vertical cutting
+      height: 64,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -223,19 +236,17 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {},
               child: FlowyGlassCard(
                 borderRadius: 20,
-                // NO fixed width: Elastic design based on padding
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min, // Row takes only needed width
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(mood['icon'] as IconData,
                         color: c.withOpacity(0.9),
-                        size: 22,
+                        size: 20,
                         shadows: [Shadow(color: c.withOpacity(0.5), blurRadius: 8)]),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Text(
                       mood['label'] as String,
-                      maxLines: 1,
                       softWrap: false,
                       style: GoogleFonts.poppins(
                         color: Colors.white,
@@ -259,12 +270,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Positioned(
           top: -100,
           right: -150,
-          child: _GlowSphere(color: palette.primaryNeon.withOpacity(0.4), size: 700),
+          child: _GlowSphere(color: palette.primaryNeon.withOpacity(0.2), size: 700),
         ),
         Positioned(
           bottom: -150,
           left: -150,
-          child: _GlowSphere(color: palette.secondaryNeon.withOpacity(0.4), size: 700),
+          child: _GlowSphere(color: palette.secondaryNeon.withOpacity(0.2), size: 700),
         ),
       ],
     );
@@ -272,26 +283,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildTrackItem(dynamic song) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.08), width: 0.5),
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.06), width: 0.5),
       ),
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(14),
             child: CachedNetworkImage(
               imageUrl: song.coverUrl,
-              width: 44,
-              height: 44,
+              width: 52,
+              height: 52,
               fit: BoxFit.cover,
               placeholder: (context, url) => Container(color: Colors.white10),
-              errorWidget: (context, url, error) => const Icon(Icons.music_note, color: Colors.white24, size: 18),
+              errorWidget: (context, url, error) => const Icon(Icons.music_note, color: Colors.white24, size: 20),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,15 +312,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
-                      fontSize: 14),
+                      fontSize: 15),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   song.artist,
                   style: GoogleFonts.poppins(
-                      color: Colors.white.withOpacity(0.5),
-                      fontSize: 11,
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 12,
                       fontWeight: FontWeight.w400),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -317,7 +328,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          Icon(Icons.play_circle_fill, color: const Color(0xFFFF4D00).withOpacity(0.8), size: 26),
         ],
       ),
     );
