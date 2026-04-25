@@ -20,6 +20,11 @@ class PlayTrack extends PlayerEvent {
 class TogglePause extends PlayerEvent {}
 class StopTrack extends PlayerEvent {}
 
+class Seek extends PlayerEvent {
+  final Duration position;
+  Seek(this.position);
+}
+
 class UpdatePosition extends PlayerEvent {
   final Duration position;
   UpdatePosition(this.position);
@@ -77,6 +82,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     on<PlayTrack>(_onPlayTrack);
     on<TogglePause>(_onTogglePause);
     on<StopTrack>(_onStopTrack);
+    on<Seek>((event, emit) => _player.seek(event.position));
     on<UpdatePosition>((event, emit) => emit(state.copyWith(position: event.position)));
 
     // Listen to player streams

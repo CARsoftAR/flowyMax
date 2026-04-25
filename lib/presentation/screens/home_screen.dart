@@ -10,6 +10,7 @@ import '../bloc/search_bloc.dart';
 import '../bloc/player_bloc.dart';
 import '../widgets/floating_navbar.dart';
 import '../widgets/scale_on_press.dart';
+import 'search_screen.dart';
 import '../../injection_container.dart' as di;
 
 class HomeScreen extends StatefulWidget {
@@ -50,101 +51,27 @@ class _HomeScreenState extends State<HomeScreen> {
             
             _buildAtmosphere(palette),
 
-            // ── CAPA 2: CONTENIDO SCROLLABLE (CustomScrollView) ──────────────
-            SafeArea(
-              child: BlocBuilder<SearchBloc, SearchState>(
-                builder: (context, searchState) {
-                  return CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      // Search Bar
-                      SliverAppBar(
-                        backgroundColor: Colors.transparent,
-                        elevation: 0,
-                        floating: true,
-                        snap: true,
-                        toolbarHeight: 64,
-                        flexibleSpace: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                          child: FlowyGlassCard(
-                            borderRadius: 50,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
-                              children: [
-                                Icon(Icons.search_rounded, color: Colors.white.withOpacity(0.5), size: 20),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: TextField(
-                                    style: GoogleFonts.poppins(color: Colors.white, fontSize: 13),
-                                    decoration: InputDecoration(
-                                      hintText: 'Search music...',
-                                      hintStyle: GoogleFonts.poppins(color: Colors.white24, fontSize: 13),
-                                      border: InputBorder.none,
-                                      isDense: true,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Moods
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
-                              child: Text(
-                                'EXPLORA TU MOOD',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white54,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ),
-                            _buildMoodsList(),
-                          ],
-                        ),
-                      ),
-
-                      // Tendencias
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
-                        sliver: SliverToBoxAdapter(
-                          child: Text(
-                            'Tendencias',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Song List
-                      if (searchState is SearchLoading)
-                        const SliverToBoxAdapter(
-                          child: Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(40),
+            // ── CAPA 2: CONTENIDO DINÁMICO (Tabs) ────────────────────────────
+            if (_selectedIndex == 0)
+              SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildFixedHeader(),
+                    Expanded(
+                      child: BlocBuilder<SearchBloc, SearchState>(
+                        builder: (context, state) {
+                          if (state is SearchLoading) {
+                            return const Center(
                               child: CircularProgressIndicator(color: Color(0xFFFF4D00)),
-                            ),
-                          ),
-                        )
-                      else if (searchState is SearchLoaded)
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final song = searchState.songs[index];
+                            );
+                          } else if (state is SearchLoaded) {
+                            return ListView.builder(
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+                              itemCount: state.songs.length,
+                              itemBuilder: (context, index) {
+                                final song = state.songs[index];
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: ScaleOnPress(
@@ -155,17 +82,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 );
                               },
-                              childCount: searchState.songs.length,
-                            ),
-                          ),
-                        ),
-
-                      const SliverPadding(padding: EdgeInsets.only(bottom: 240)),
-                    ],
-                  );
-                },
-              ),
-            ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (_selectedIndex == 1)
+              const SearchScreen()
+            else
+              const Center(child: Text('Coming Soon', style: TextStyle(color: Colors.white24))),
 
             // ── CAPA 3: UI FIJA (Null-Safe 3D Card & Navbar) ─────────────────
             BlocBuilder<PlayerBloc, PlayerState>(
@@ -180,10 +109,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Null-Safe Active Track Card
                           if (playerState.currentSong != null)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.only(bottom: 8),
                               child: Dismissible(
                                 key: ValueKey('player_${playerState.currentSong!.id}'),
                                 direction: DismissDirection.horizontal,
@@ -193,8 +121,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: const FloatingPlayer(),
                               ),
                             ),
-                          
-                          // Integrated Navbar
                           FloatingNavbar(
                             selectedIndex: _selectedIndex,
                             onTap: (index) => setState(() => _selectedIndex = index),
@@ -212,6 +138,68 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildFixedHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. Buscador (Static)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: FlowyGlassCard(
+            borderRadius: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Icon(Icons.search_rounded, color: Colors.white.withOpacity(0.5), size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    style: GoogleFonts.poppins(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Search music...',
+                      hintStyle: GoogleFonts.poppins(color: Colors.white24, fontSize: 13),
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // 2. Moods (Static)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
+          child: Text(
+            'EXPLORA TU MOOD',
+            style: GoogleFonts.poppins(
+              color: Colors.white54,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        _buildMoodsList(),
+
+        // 3. Título Tendencias (Static)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+          child: Text(
+            'Tendencias',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMoodsList() {
     final moods = [
       {'label': 'Día de lluvia', 'icon': Icons.umbrella_rounded, 'color': Colors.cyan},
@@ -221,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return SizedBox(
-      height: 64,
+      height: 60,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),

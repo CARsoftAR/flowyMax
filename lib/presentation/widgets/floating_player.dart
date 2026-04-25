@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../bloc/player_bloc.dart';
+import '../screens/full_player_screen.dart';
 
 class FloatingPlayer extends StatelessWidget {
   const FloatingPlayer({super.key});
@@ -17,7 +18,27 @@ class FloatingPlayer extends StatelessWidget {
 
         return GestureDetector(
           onTap: () {
-            // Full Screen Player placeholder
+            Navigator.of(context).push(
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) => const FullPlayerScreen(),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  const begin = Offset(0.0, 1.0);
+                  const end = Offset.zero;
+                  const curve = Curves.easeOutQuart;
+
+                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                  var offsetAnimation = animation.drive(tween);
+
+                  return SlideTransition(
+                    position: offsetAnimation,
+                    child: FadeTransition(
+                      opacity: animation,
+                      child: child,
+                    ),
+                  );
+                },
+              ),
+            );
           },
           child: Transform(
             transform: Matrix4.identity()
@@ -55,26 +76,29 @@ class FloatingPlayer extends StatelessWidget {
                     child: Row(
                       children: [
                         // Carátula 3D
-                        Container(
-                          width: 54,
-                          height: 54,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: const Offset(2, 2),
-                              )
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
-                            child: CachedNetworkImage(
-                              imageUrl: song.coverUrl,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(color: Colors.white10),
-                              errorWidget: (context, url, error) => const Icon(Icons.music_note, color: Colors.white24),
+                        Hero(
+                          tag: 'album_art',
+                          child: Container(
+                            width: 54,
+                            height: 54,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(2, 2),
+                                )
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: CachedNetworkImage(
+                                imageUrl: song.coverUrl,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(color: Colors.white10),
+                                errorWidget: (context, url, error) => const Icon(Icons.music_note, color: Colors.white24),
+                              ),
                             ),
                           ),
                         ),
