@@ -11,6 +11,8 @@ import '../bloc/player_bloc.dart';
 import '../widgets/floating_navbar.dart';
 import '../widgets/scale_on_press.dart';
 import 'search_screen.dart';
+import 'library_screen.dart';
+import 'stats_screen.dart';
 import '../../injection_container.dart' as di;
 
 class HomeScreen extends StatefulWidget {
@@ -93,6 +95,10 @@ class _HomeScreenState extends State<HomeScreen> {
               )
             else if (_selectedIndex == 1)
               const SearchScreen()
+            else if (_selectedIndex == 2)
+              const LibraryScreen()
+            else if (_selectedIndex == 3)
+              const StatsScreen()
             else
               const Center(child: Text('Coming Soon', style: TextStyle(color: Colors.white24))),
 
