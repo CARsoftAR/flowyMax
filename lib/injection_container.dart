@@ -11,6 +11,7 @@ import 'domain/repositories/music_repository.dart';
 import 'domain/usecases/search_songs.dart';
 import 'domain/usecases/get_trending_songs.dart';
 import 'domain/usecases/get_stream_url.dart';
+import 'domain/usecases/search_mood.dart';
 import 'presentation/bloc/search_bloc.dart';
 import 'presentation/bloc/player_bloc.dart';
 
@@ -38,13 +39,14 @@ Future<void> init() async {
   sl.registerLazySingleton(() => SearchSongs(sl()));
   sl.registerLazySingleton(() => GetTrendingSongs(sl()));
   sl.registerLazySingleton(() => GetStreamUrl(sl()));
+  sl.registerLazySingleton(() => SearchMood(sl()));
 
   // Core
   sl.registerLazySingleton(() => ApiClient(sl()));
 
   // Data sources
   sl.registerLazySingleton<MusicRemoteDataSource>(
-    () => MusicRemoteDataSourceImpl(sl(), sl()),
+    () => MusicRemoteDataSourceImpl(sl()),
   );
 
   // Repository
@@ -57,6 +59,7 @@ Future<void> init() async {
     () => SearchBloc(
       searchSongs: sl(),
       getTrendingSongs: sl(),
+      searchMood: sl(),
     ),
   );
   sl.registerFactory(

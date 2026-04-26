@@ -5,21 +5,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'injection_container.dart' as di;
 import 'presentation/screens/home_screen.dart';
 import 'presentation/bloc/player_bloc.dart';
+import 'presentation/bloc/search_bloc.dart';
 
 void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  // Preservamos el splash nativo inmediatamente
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-  
-  // Inicializamos servicios y cargamos datos mientras el splash nativo es visible
   await di.init();
-  
-  // Simulación de carga mínima para que el usuario aprecie el logo nítido
   await Future.delayed(const Duration(seconds: 2));
-  
-  // Removemos el splash nativo y entramos a la Home
   FlutterNativeSplash.remove();
-  
   runApp(const MyApp());
 }
 
@@ -32,6 +25,9 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider<PlayerBloc>(
           create: (context) => di.sl<PlayerBloc>(),
+        ),
+        BlocProvider<SearchBloc>(
+          create: (context) => di.sl<SearchBloc>(),
         ),
       ],
       child: MaterialApp(

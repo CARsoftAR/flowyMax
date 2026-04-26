@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../domain/entities/song_entity.dart';
 import '../../domain/usecases/search_songs.dart';
 import '../../domain/usecases/get_trending_songs.dart';
+import '../../domain/usecases/search_mood.dart';
 
 // Events
 abstract class SearchEvent extends Equatable {
@@ -17,6 +18,13 @@ class SearchQueryChanged extends SearchEvent {
   SearchQueryChanged(this.query);
   @override
   List<Object?> get props => [query];
+}
+
+class MoodSearch extends SearchEvent {
+  final String moodQuery;
+  MoodSearch(this.moodQuery);
+  @override
+  List<Object?> get props => [moodQuery];
 }
 
 // States
@@ -44,10 +52,12 @@ class SearchError extends SearchState {
 class SearchBloc extends Bloc<SearchEvent, SearchState> {
   final SearchSongs searchSongs;
   final GetTrendingSongs getTrendingSongs;
+  final SearchMood searchMood;
 
   SearchBloc({
     required this.searchSongs,
     required this.getTrendingSongs,
+    required this.searchMood,
   }) : super(SearchInitial()) {
     on<FetchTrending>((event, emit) async {
       emit(SearchLoading());
@@ -67,6 +77,15 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       final failureOrSongs = await searchSongs(event.query);
       failureOrSongs.fold(
         (failure) => emit(SearchError('Error searching songs')),
+        (songs) => emit(SearchLoaded(songs)),
+      );
+    });
+
+    on<MoodSearch>((event, emit) async {
+      emit(SearchLoading());
+      final failureOrSongs = await searchMood(event.moodQuery);
+      failureOrSongs.fold(
+        (failure) => emit(SearchError('Error loading mood')),
         (songs) => emit(SearchLoaded(songs)),
       );
     });

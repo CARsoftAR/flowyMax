@@ -6,4 +6,5 @@ abstract class MusicRepository {
   Future<Either<Failure, List<SongEntity>>> searchSongs(String query);
   Future<Either<Failure, List<SongEntity>>> getTrendingSongs();
   Future<Either<Failure, String>> getStreamUrl(String title, String artist);
+  Future<Either<Failure, List<SongEntity>>> searchMood(String moodQuery);
 }

@@ -13,19 +13,7 @@ class MusicRepositoryImpl implements MusicRepository {
   Future<Either<Failure, List<SongEntity>>> searchSongs(String query) async {
     try {
       final models = await remoteDataSource.searchSongs(query);
-      
-      final entities = await Future.wait(models.map((model) async {
-        final iTunesCover = await remoteDataSource.getITunesCover('${model.title} ${model.artist}');
-        return SongEntity(
-          id: model.id,
-          title: model.title,
-          artist: model.artist,
-          streamUrl: model.streamUrl,
-          coverUrl: iTunesCover ?? model.coverUrl,
-          duration: model.duration,
-        );
-      }));
-
+      final entities = models.map((model) => model.toEntity()).toList();
       return Right(entities);
     } catch (e) {
       return Left(ServerFailure());
@@ -36,19 +24,7 @@ class MusicRepositoryImpl implements MusicRepository {
   Future<Either<Failure, List<SongEntity>>> getTrendingSongs() async {
     try {
       final models = await remoteDataSource.getTrendingSongs();
-      
-      final entities = await Future.wait(models.map((model) async {
-        final iTunesCover = await remoteDataSource.getITunesCover('${model.title} ${model.artist}');
-        return SongEntity(
-          id: model.id,
-          title: model.title,
-          artist: model.artist,
-          streamUrl: model.streamUrl,
-          coverUrl: iTunesCover ?? model.coverUrl,
-          duration: model.duration,
-        );
-      }));
-
+      final entities = models.map((model) => model.toEntity()).toList();
       return Right(entities);
     } catch (e) {
       return Left(ServerFailure());
@@ -60,6 +36,17 @@ class MusicRepositoryImpl implements MusicRepository {
     try {
       final url = await remoteDataSource.getStreamUrl(title, artist);
       return Right(url);
+    } catch (e) {
+      return Left(ServerFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<SongEntity>>> searchMood(String moodQuery) async {
+    try {
+      final models = await remoteDataSource.searchMood(moodQuery);
+      final entities = models.map((model) => model.toEntity()).toList();
+      return Right(entities);
     } catch (e) {
       return Left(ServerFailure());
     }
